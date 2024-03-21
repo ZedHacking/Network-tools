@@ -154,4 +154,4 @@ def main():
             site = input("Digite o site: ")
             verificar_cloudflare(site)
         elif escolha == "6":
-            site = input("Digite o site:
+            site = input("Digite o site: ")
