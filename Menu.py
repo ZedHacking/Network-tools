@@ -1,17 +1,16 @@
-from scapy.all import *
 import requests
 import subprocess
 import socket
-import cloudflare
 from colorama import Fore, Style
+from scapy.all import *
 
 def instalar_bibliotecas():
-    subprocess.call(['pip', 'install', 'requests', 'cloudflare', 'colorama', 'scapy'])
+    subprocess.call(['pip', 'install', 'requests', 'colorama', 'scapy'])
 
 def verificar_portas(site):
     try:
         print(Fore.GREEN + "Verificando portas abertas...\n")
-        for porta in range(1, 1025):  # Verificar as primeiras 1024 portas comuns
+        for porta in range(1, 1025):
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(1)
             resultado = sock.connect_ex((site, porta))
@@ -51,24 +50,10 @@ def verificar_status(site):
 
     input(Fore.WHITE + "Pressione Enter para voltar ao menu...")
 
-def verificar_cloudflare(site):
-    try:
-        cf = cloudflare.cloudflare()
-        protection = cf.check(site)
-        if protection:
-            print(Fore.GREEN + "O site tem proteção Cloudflare.")
-        else:
-            print(Fore.RED + "O site não tem proteção Cloudflare.")
-    except Exception as e:
-        print(Fore.RED + f"Erro ao verificar proteção Cloudflare: {e}")
-
-    input(Fore.WHITE + "Pressione Enter para voltar ao menu...")
-
 def testar_vulnerabilidades(site):
     print(Fore.GREEN + "Testando vulnerabilidades...\n")
     print(Fore.RED + "Atenção: Este teste pode ser intrusivo e deve ser realizado com permissão do proprietário do site.\n")
 
-    # Teste de DDoS (ataque de flood TCP SYN)
     print(Fore.YELLOW + "Realizando teste de vulnerabilidade a ataques DDoS (flood TCP SYN)...")
     pacote = IP(dst=site)/TCP(dport=80, flags="S")
     resposta = sr1(pacote, timeout=2, verbose=False)
@@ -77,10 +62,8 @@ def testar_vulnerabilidades(site):
     else:
         print(Fore.GREEN + "O site parece não ser vulnerável a ataques DDoS (flood TCP SYN).")
 
-    # Teste de SQL injection
     print(Fore.YELLOW + "Realizando teste de vulnerabilidade a ataques SQL injection...")
     try:
-        # Substitua o payload pelo SQL injection adequado para o seu teste
         payload = "1' OR '1'='1"
         resposta = requests.get(f"{site}?id={payload}")
         if "error in your SQL syntax" in resposta.text:
@@ -94,42 +77,30 @@ def testar_vulnerabilidades(site):
 
     input(Fore.WHITE + "Pressione Enter para voltar ao menu...")
 
-def procurar_painel_admin(site):
+def verificar_servidor(site):
     try:
-        admin_panel_paths = [
-            "admin/", "administrator/", "admin/login", "admin/login.php", "admin/login.html",
-            "admin/index", "admin/index.php", "admin/index.html", "admin/home", "admin/home.php",
-            "admin/home.html", "admin/controlpanel", "admin/controlpanel.php", "admin/controlpanel.html"
-        ]
-        
-        print(Fore.GREEN + "Procurando por painel de administração...\n")
-        for path in admin_panel_paths:
-            url = f"http://{site}/{path}"
-            response = requests.get(url)
-            if response.status_code == 200:
-                print(Fore.GREEN + f"Painel de administração encontrado: {url}")
-                return
-        print(Fore.RED + "Painel de administração não encontrado.")
+        endereco_ip = socket.gethostbyname(site)
+        nome_servidor = socket.gethostbyaddr(endereco_ip)[0]
+        print(Fore.GREEN + f"O servidor está hospedado em: {endereco_ip}")
+        print(Fore.GREEN + f"Nome do servidor: {nome_servidor}")
+    except socket.gaierror:
+        print(Fore.RED + "Não foi possível encontrar informações sobre o servidor.")
     except Exception as e:
-        print(Fore.RED + f"Erro ao procurar painel de administração: {e}")
+        print(Fore.RED + f"Erro ao verificar informações do servidor: {e}")
 
     input(Fore.WHITE + "Pressione Enter para voltar ao menu...")
 
 def exibir_menu():
     print(Fore.BLUE + "======= MENU =======")
-    print("1. Verificar todas as portas abertas de um site")
-    print("2. Verificar se o site é UDP ou TCP")
-    print("3. Consultar o IP de um site")
-    print("4. Verificar se um site está fora do ar e seu tempo de resposta")
-    print("5. Verificar se o site tem proteção Cloudflare")
-    print("6. Testar vulnerabilidades (DDoS, SQL injection)")
-    print("7. Procurar por painel de administração")
-    print("8. Créditos")
-    print("9. Sair")
-    print(Style.RESET_ALL)  # Resetar estilo para evitar cores indesejadas
-
-def exibir_creditos():
-    print("Criado por zedhacking, salve Alexandre")
+    print("1. Verificar portas abertas")
+    print("2. Verificar protocolo")
+    print("3. Consultar IP")
+    print("4. Verificar status do site")
+    print("5. Testar vulnerabilidades")
+    print("6. Verificar informações do servidor")
+    print("7. Créditos")
+    print("8. Sair")
+    print(Style.RESET_ALL)
 
 def main():
     instalar_bibliotecas()
@@ -152,6 +123,17 @@ def main():
             verificar_status(site)
         elif escolha == "5":
             site = input("Digite o site: ")
-            verificar_cloudflare(site)
+            testar_vulnerabilidades(site)
         elif escolha == "6":
             site = input("Digite o site: ")
+            verificar_servidor(site)
+        elif escolha == "7":
+            print("Criado por zedhacking, salve Alexandre")
+        elif escolha == "8":
+            print("Saindo...")
+            break
+        else:
+            print(Fore.RED + "Opção inválida. Por favor, escolha uma opção válida.")
+
+if __name__ == "__main__":
+    main()
